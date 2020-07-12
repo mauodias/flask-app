@@ -5,7 +5,7 @@ from .models import db, Game
 
 
 @app.route('/play', methods=['GET', 'POST'])
-def user_records():
+def play():
     if request.method == 'GET':
         new_game = Game.new()
         db.session.add(new_game)
