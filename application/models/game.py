@@ -1,5 +1,7 @@
-from . import db
+from .db import db
+from .player import Player
 import json
+import random
 import uuid
 
 class Game(db.Model):
@@ -8,7 +10,7 @@ class Game(db.Model):
         db.Integer,
         primary_key=True
     )
-    _uuid = db.Column(
+    uuid = db.Column(
         'uuid',
         db.String(36),
         index=False,
@@ -33,7 +35,7 @@ class Game(db.Model):
     player1 = db.relationship('Player', foreign_keys=[player1_id])
     player2 = db.relationship('Player', foreign_keys=[player2_id])
     next_player = db.relationship('Player', foreign_keys=[next_player_id])
-    dice = db.Column(
+    dice_value = db.Column(
         db.Integer,
         default=-1
     )
@@ -42,10 +44,6 @@ class Game(db.Model):
         nullable=False,
         default=''
     )
-
-    @property
-    def uuid(self):
-        return uuid.UUID(self._uuid)
 
     def __repr__(self):
         return f'{str(self.uuid)}'
@@ -68,7 +66,7 @@ class Game(db.Model):
         obj = {
             'id': str(self.uuid),
             'board': self.board,
-            'dice': self.dice,
+            'dice_value': self.dice_value,
             'player1': {
                 'id': self.player1.id,
                 'total_rocks': self.player1.total_rocks,
@@ -83,37 +81,12 @@ class Game(db.Model):
         }
         return obj
 
-
-class Player(db.Model):
-    __tablename__ = 'players'
-    id = db.Column(
-        db.Integer,
-        primary_key=True
-    )
-    total_rocks = db.Column(
-        db.Integer,
-        default=7
-    )
-    active_rocks = db.Column(
-        db.Integer,
-        default=0
-    )
-
-    def play_rock(self):
-        if self.active_rocks < self.total_rocks:
-            self.active_rocks += 1
-            return True
-        return False
-
-    def return_rock(self):
-        if self.active_rocks > 0:
-            self.active_rocks -= 1
-            return True
-        return False
-
-    def score(self):
-        if self.total_rocks > 0 and self.active_rocks > 0:
-            self.total_rocks -= 1
-            self.active_rocks -= 1
-            return True
-        return False
+    def dice(self):
+        if self.dice_value == -1:
+            dice_sum = []
+            for i in range(4):
+                dice_sum.append(random.randint(0,1))
+            self.dice_value = sum(dice_sum)
+            db.session.add(self)
+            db.session.commit()
+        return {'id': self.uuid, 'dice': self.dice_value}
